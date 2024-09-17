@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+# shellcheck source=scripts/log.sh
+if ! source "${PROJECT_SCRIPT_DIR:-scripts}/log.sh" 2>/dev/null; then
+    echo "Failed to source log library" >&2
+    exit 1
+fi
+
+command -v go &>/dev/null || die "Go is required"
+command -v git &>/dev/null || die "Git is required"
+
+if [[ -f "go.mod" ]] || git rev-parse --is-inside-work-tree &>/dev/null; then
+   die "Setup appears to have already been run"
+fi
+
+# root_dir="${PROJECT_ROOT_DIR:-.}"
+git_hook_dir="${PROJECT_GIT_HOOK_DIR:-.github/hooks}"
+
+app_name="${PROJECT_APP_NAME:-eggo}"
+go_mod_path="${PROJECT_GO_MOD_PATH:-github.com/drakelthedragon/eggo}"
+
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        --app-name) app_name="$2"; shift ;;
+        --go-mod-path) go_mod_path="$2"; shift ;;
+        *) die "Unknown parameter passed: $1" ;;
+    esac
+    shift
+done
+
+
+say "Setting up ${app_name}..."
+
+say "Initializing go module with the path as ${go_mod_path}..."
+go mod init "${go_mod_path}" || die "Failed to initialize go module"
+say "Finished initializing go module"
+
+say "Initializing git repository..."
+git init || die "Failed to initialize git repository"
+say "Finished initializing git repository"
+
+say "Configuring git hooks..."
+git config core.hooksPath "${git_hook_dir}" || die "Failed to set git hooks path"
+say "Finished configuring git hooks"
+
+say "Creating README.md..."
+printf '# %s\n' "${app_name}" > README.md
+say "Finished creating README.md"
+
+say "Completed setup for ${app_name}"

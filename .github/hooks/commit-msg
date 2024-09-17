@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if ! command -v npx &>/dev/null; then
+    echo "npx is required to run commitlint" >&2 && exit 1
+fi
+
+npx -- @commitlint/cli --edit "$1"
